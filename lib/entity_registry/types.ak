@@ -1,3 +1,7 @@
+use aiken/collection/dict.{Dict}
+use aiken/collection/list
+use aiken/crypto.{VerificationKeyHash}
+
 /// Types for the Entity Registry contract
 /// These types represent the core data structures used for SACCO entities and their members
 /// SACCO entity metadata
