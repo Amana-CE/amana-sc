@@ -1,7 +1,7 @@
 use aiken/collection/dict
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
-use cardano/transaction.{OutputReference, Transaction}
+use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use entity_registry/types.{
   Entity, Member, MemberStatus, RegistryAction, RegistryDatum,
 }
@@ -20,7 +20,7 @@ validator entity_registry {
     tx: Transaction,
   ) {
     // Extract transaction signatories
-    let Transaction { extra_signatories, .. } = tx
+    let Transaction { extra_signatories, outputs, .. } = tx
 
     // Process based on the presence of existing datum
     when datum_opt is {
@@ -30,79 +30,45 @@ validator entity_registry {
         // Verify authorization based on redeemer action
         when redeemer is {
           RegistryAction.CreateEntity { name, description } ->
-            // TODO: Validation logic for CreateEntity:
-            // 1. Entity already exists, so creation should fail
-            // 2. Return False to indicate failure
             // Entity already exists, creation should fail
             False
+          // Other actions remain as placeholders for now
           RegistryAction.AddMember { member } -> {
-            // TODO: Validation logic for AddMember:
-            // 1. Ensure transaction is signed by an admin
-            // 2. Check that member doesn't already exist
-            // 3. Validate member data (non-empty name, valid status)
-            // 4. Check if output datum is correctly updated
-            // Check if transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
-            // Check if member already exists
             let member_exists =
               dict.has_key(members_dict, member.verification_key_hash)
-            // Basic validation - admin signed and member doesn't exist
             is_signed_by_admin && !member_exists
           }
           RegistryAction.UpdateMemberStatus { member_key, new_status } -> {
-            // TODO: Validation logic for UpdateMemberStatus:
-            // 1. Ensure transaction is signed by an admin
-            // 2. Verify member exists
-            // 3. Validate the new status
-            // 4. Check if output datum is correctly updated
-            // Check if transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
-            // Check if member exists
             let member_exists = dict.has_key(members_dict, member_key)
-            // Basic validation - admin signed and member exists
             is_signed_by_admin && member_exists
           }
           RegistryAction.AddAdmin { admin_key } -> {
-            // TODO: Validation logic for AddAdmin:
-            // 1. Ensure transaction is signed by an existing admin
-            // 2. Check that the new admin doesn't already exist
-            // 3. Check if output datum is correctly updated
-            // Check if transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
-            // Check if admin already exists
             let admin_exists = list.has(datum.admins, admin_key)
-            // Basic validation - admin signed and new admin doesn't exist
             is_signed_by_admin && !admin_exists
           }
           RegistryAction.RemoveAdmin { admin_key } -> {
-            // TODO: Validation logic for RemoveAdmin:
-            // 1. Ensure transaction is signed by an existing admin
-            // 2. Check that admin exists
-            // 3. Ensure we're not removing the last admin
-            // 4. Check if output datum is correctly updated
-            // Check if transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
-            // Check if admin exists
             let admin_exists = list.has(datum.admins, admin_key)
-            // Check if there will be admins left after removal
             let will_have_admins_left = list.length(datum.admins) > 1
-            // Basic validation - admin signed, admin exists, and not removing last admin
             is_signed_by_admin && admin_exists && will_have_admins_left
           }
         }
@@ -110,19 +76,50 @@ validator entity_registry {
       None ->
         // Initial setup case - only CreateEntity is valid when no datum exists
         when redeemer is {
-          RegistryAction.CreateEntity { name, description } ->
-            // TODO: Validation logic for CreateEntity:
+          RegistryAction.CreateEntity { name, description } -> {
             // 1. Verify the entity name and description are not empty
-            // 2. Ensure transaction is signed
-            // 3. Set the founder to the transaction signer
-            // 4. Check if output datum is correctly initialized
-            // Get the signer, assuming there is at least one
-            if list.length(extra_signatories) == 0 {
+            let valid_name = name != ""
+            let valid_description = description != ""
+            // 2. Ensure transaction is signed by at least one key
+            let has_signer = list.length(extra_signatories) > 0
+            if !has_signer || !valid_name || !valid_description {
               False
             } else {
-              // Basic validation - verify entity name and description are not empty
-              name != "" && description != ""
+              // 3. Get the founder (first signer)
+              expect Some(founder) = list.at(extra_signatories, 0)
+              // 4. Check if output datum is correctly initialized
+              // Find outputs that contain an inline datum
+              let outputs_with_inline_datum =
+                list.filter(
+                  outputs,
+                  fn(output) {
+                    when output.datum is {
+                      InlineDatum(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+              when outputs_with_inline_datum is {
+                [output] ->
+                  // Verify the output contains a properly initialized datum
+                  when output.datum is {
+                    InlineDatum(data) -> {
+                      expect new_datum: RegistryDatum = data
+                      // Verify the entity is properly initialized
+                      let entity_valid =
+                        new_datum.entity.name == name && new_datum.entity.description == description && new_datum.entity.founder == founder && new_datum.entity.member_count == 0
+                      // Verify admins list contains the founder
+                      let admins_valid = list.has(new_datum.admins, founder)
+                      // Verify members list is empty initially
+                      let members_valid = list.length(new_datum.members) == 0
+                      entity_valid && admins_valid && members_valid
+                    }
+                    _ -> False
+                  }
+                _ -> False
+              }
             }
+          }
           // Any other action is invalid when no datum exists
           _ -> False
         }
