@@ -1,0 +1,247 @@
+{
+  "preamble": {
+    "title": "amanace/amana-contracts",
+    "description": "Aiken contracts for project 'amanace/amana-contracts'",
+    "version": "0.0.0",
+    "plutusVersion": "v3",
+    "compiler": {
+      "name": "Aiken",
+      "version": "v1.1.15+unknown"
+    },
+    "license": "Apache-2.0"
+  },
+  "validators": [
+    {
+      "title": "entity_registry/entity_registry.entity_registry.spend",
+      "datum": {
+        "title": "datum_opt",
+        "schema": {
+          "$ref": "#/definitions/entity_registry~1types~1RegistryDatum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/entity_registry~1types~1RegistryAction"
+        }
+      },
+      "compiledCode": "5901d901010029800aba2aba1aab9faab9eaab9dab9a48888896600264653001300700198039804000cdc3a400530070024888966002600460106ea800e26644653001159800980118059baa001899250300e300c375400314a0805260166ea801e4464b300130050018acc004c03cdd5001c00a2c80822b300130080018acc004c03cdd5001c00a2c80822b30013370e9002000c566002601e6ea800e005164041164034806900d18069baa0029807001a4444b300130060038991919912cc004c05c00e0111640546eb8c050004dd7180a001180a00098081baa00b8acc004c02400e264b300130140018992cc004c020c044dd5000c4c8c8ca60026eb4c05c0066030003375c602e007375c602e00491112cc004c07000e266016603600601b1640683017001301600130123754003164040602600316404860206ea802e2b30013370e9002001c4c8cc8966002602c00313300530150010078b2028375c6026002602800260206ea802e2b30013370e9003001c4c8c966002602a0050068b2026375c602600260206ea802e2b30013370e9004001c4c8c966002602a0050068b2026375c602600260206ea802e2c807100e201c40388070601a601c00460126ea800cdc3a400114a08038600e00260066ea801e29344d9590011",
+      "hash": "38f73aa742ff69ab9bf64c69b8d57a0c75f2dc80451ccb5606483742"
+    },
+    {
+      "title": "entity_registry/entity_registry.entity_registry.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "5901d901010029800aba2aba1aab9faab9eaab9dab9a48888896600264653001300700198039804000cdc3a400530070024888966002600460106ea800e26644653001159800980118059baa001899250300e300c375400314a0805260166ea801e4464b300130050018acc004c03cdd5001c00a2c80822b300130080018acc004c03cdd5001c00a2c80822b30013370e9002000c566002601e6ea800e005164041164034806900d18069baa0029807001a4444b300130060038991919912cc004c05c00e0111640546eb8c050004dd7180a001180a00098081baa00b8acc004c02400e264b300130140018992cc004c020c044dd5000c4c8c8ca60026eb4c05c0066030003375c602e007375c602e00491112cc004c07000e266016603600601b1640683017001301600130123754003164040602600316404860206ea802e2b30013370e9002001c4c8cc8966002602c00313300530150010078b2028375c6026002602800260206ea802e2b30013370e9003001c4c8c966002602a0050068b2026375c602600260206ea802e2b30013370e9004001c4c8c966002602a0050068b2026375c602600260206ea802e2c807100e201c40388070601a601c00460126ea800cdc3a400114a08038600e00260066ea801e29344d9590011",
+      "hash": "38f73aa742ff69ab9bf64c69b8d57a0c75f2dc80451ccb5606483742"
+    }
+  ],
+  "definitions": {
+    "ByteArray": {
+      "dataType": "bytes"
+    },
+    "Int": {
+      "dataType": "integer"
+    },
+    "List$Pair$aiken/crypto/VerificationKeyHash_entity_registry/types/Member": {
+      "dataType": "map",
+      "keys": {
+        "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+      },
+      "values": {
+        "$ref": "#/definitions/entity_registry~1types~1Member"
+      }
+    },
+    "List$aiken/crypto/VerificationKeyHash": {
+      "dataType": "list",
+      "items": {
+        "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+      }
+    },
+    "aiken/crypto/VerificationKeyHash": {
+      "title": "VerificationKeyHash",
+      "dataType": "bytes"
+    },
+    "entity_registry/types/Entity": {
+      "title": "Entity",
+      "description": "Types for the Entity Registry contract\n These types represent the core data structures used for SACCO entities and their members\n SACCO entity metadata",
+      "anyOf": [
+        {
+          "title": "Entity",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "name",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "description",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "creation_time",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "founder",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            },
+            {
+              "title": "member_count",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "entity_registry/types/Member": {
+      "title": "Member",
+      "description": "Member record",
+      "anyOf": [
+        {
+          "title": "Member",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "name",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "verification_key_hash",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            },
+            {
+              "title": "join_time",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "status",
+              "$ref": "#/definitions/entity_registry~1types~1MemberStatus"
+            }
+          ]
+        }
+      ]
+    },
+    "entity_registry/types/MemberStatus": {
+      "title": "MemberStatus",
+      "description": "Member status enumeration",
+      "anyOf": [
+        {
+          "title": "Active",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        },
+        {
+          "title": "Inactive",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": []
+        },
+        {
+          "title": "Suspended",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": []
+        }
+      ]
+    },
+    "entity_registry/types/RegistryAction": {
+      "title": "RegistryAction",
+      "description": "Redeemer actions",
+      "anyOf": [
+        {
+          "title": "CreateEntity",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "name",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "description",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        },
+        {
+          "title": "AddMember",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": [
+            {
+              "title": "member",
+              "$ref": "#/definitions/entity_registry~1types~1Member"
+            }
+          ]
+        },
+        {
+          "title": "UpdateMemberStatus",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": [
+            {
+              "title": "member_key",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            },
+            {
+              "title": "new_status",
+              "$ref": "#/definitions/entity_registry~1types~1MemberStatus"
+            }
+          ]
+        },
+        {
+          "title": "AddAdmin",
+          "dataType": "constructor",
+          "index": 3,
+          "fields": [
+            {
+              "title": "admin_key",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            }
+          ]
+        },
+        {
+          "title": "RemoveAdmin",
+          "dataType": "constructor",
+          "index": 4,
+          "fields": [
+            {
+              "title": "admin_key",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            }
+          ]
+        }
+      ]
+    },
+    "entity_registry/types/RegistryDatum": {
+      "title": "RegistryDatum",
+      "description": "Registry datum - stored on-chain",
+      "anyOf": [
+        {
+          "title": "RegistryDatum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "entity",
+              "$ref": "#/definitions/entity_registry~1types~1Entity"
+            },
+            {
+              "title": "members",
+              "$ref": "#/definitions/List$Pair$aiken~1crypto~1VerificationKeyHash_entity_registry~1types~1Member"
+            },
+            {
+              "title": "admins",
+              "$ref": "#/definitions/List$aiken~1crypto~1VerificationKeyHash"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

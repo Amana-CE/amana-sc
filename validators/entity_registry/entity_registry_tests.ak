@@ -27,7 +27,8 @@ test entity_registry_placeholder_returns_false() {
     Some(
       RegistryDatum {
         entity,
-        members: dict.new(),
+        // Use an empty list instead of dict.empty
+        members: [],
         admins: [mock_pub_key_hash(0)],
       },
     )
@@ -62,8 +63,9 @@ test entity_registry_fallback_returns_false() {
   // Create a mock ScriptContext
   let context =
     script_context.ScriptContext {
-      purpose: script_context.Mint(#""),
       transaction: placeholder,
+      redeemer: Void,
+      info: script_context.Spending { output: mock_utxo_ref(0, 0), datum: None },
     }
   // We can't easily test the fallback handler without direct access
   // So we'll just verify behavior matches our expected outcome
@@ -85,7 +87,8 @@ fn mock_entity() -> Entity {
 fn mock_registry_datum() -> RegistryDatum {
   RegistryDatum {
     entity: mock_entity(),
-    members: dict.new(),
+    // Use an empty list for members instead of dict.empty
+    members: [],
     admins: [mock_pub_key_hash(0)],
   }
 }

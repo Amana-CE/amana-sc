@@ -27,7 +27,18 @@ validator entity_registry {
     // - UpdateMemberStatus: Check admin signature, validate status update
     // - AddAdmin: Check existing admin signature
     // - RemoveAdmin: Check existing admin signature, ensure at least one admin remains
-    False
+    // When you need to use the members as a Dict, convert it
+    when datum_opt is {
+      Some(datum) -> {
+        // Convert members list to Dict when needed
+        let members_dict = dict.from_pairs(datum.members)
+        // Rest of implementation will go here
+        False
+      }
+      None ->
+        // Handle initial setup case
+        False
+    }
   }
 
   else(_) {

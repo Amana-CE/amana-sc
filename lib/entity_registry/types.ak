@@ -32,8 +32,9 @@ pub type MemberStatus {
 pub type RegistryDatum {
   entity: Entity,
   // Use a map from verification key hash to member data
-  members: Dict<VerificationKeyHash, Member>,
+  members: List<Pair<VerificationKeyHash, Member>>,
   // Addresses authorized to update the registry
+
   admins: List<VerificationKeyHash>,
 }
 
