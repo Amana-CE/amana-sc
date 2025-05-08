@@ -37,6 +37,59 @@
       "hash": "45a6a439f50cb41279fbe0bab5fd2eda84ff02b9d1a395c800a5d98d"
     },
     {
+      "title": "governance/governance.governance.spend",
+      "datum": {
+        "title": "datum_opt",
+        "schema": {
+          "$ref": "#/definitions/governance~1types~1GovernanceDatum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/governance~1types~1GovernanceAction"
+        }
+      },
+      "parameters": [
+        {
+          "title": "entity_registry_hash",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        },
+        {
+          "title": "treasury_hash",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        }
+      ],
+      "compiledCode": "5903150101002229800aba2aba1aab9faab9eaab9dab9a9bae0039bae0024888888896600264653001300900198049805000cdc3a400530090024888966002600460146ea800e33001300b3754007370e90024dc3a400d370e90004c028dd5002244444646644b30013005004899191919194c004c0680066eb8c0680166eb8c0680126eb4c068009222259800980f802c4c8c9660026020003159800980f1baa002806c5901f4566002602a003159800980f1baa002806c5901f45660026024003159800980f1baa002806c5901f45660026022003159800980f1baa002806c5901f45901c2038407080e0c070dd5000980f003c5901d0c068004c064004c060004c05c004c04cdd500645660026014009132332259800980c800c4c8c9660026014003159800980c1baa002803c590194566002601e003159800980c1baa002803c5901945660026018003159800980c1baa002803c59019459016202c4058602c6ea8004c0600062c80b8dd6980b000980b80098099baa00c8acc004c01c01226464b300130180028024590161bad301600130133754019159800980300244c8c96600260300050048b202c375a602c00260266ea80322b30013370e900400244c966002602e003132598009803980a1baa00189919194c004dd6980d000cdd6980d001cdd6980d0012444b3001301e00480545901c0c068004c064004c054dd5000c59013180b000c5901518099baa00c8b2022404480890112022132332259800980318099baa004899912cc004c0200062646464653001375a6038003301c301d0019bae301c0049bae301c003980e001244444940603800260360026034002602c6ea803e2b3001300d0018991991250375a603200260326034002602c6ea803e2b3001300a001899250375a6030602c6ea803e2b30013009001899250375a6030602c6ea803e264940c060c058dd5007a028405080a1014180b180a1baa0043013375401b159800980318099baa00d8a508a5040488090dd6180a0009bac3014301530153015301530153015001301430143011375400e602600c6024602600a8a504024300900130053754013149a26cac80181",
+      "hash": "bc9295fd3bbd5906239400bb5d2e0c9f6913b245a005a8e18ccf6851"
+    },
+    {
+      "title": "governance/governance.governance.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "parameters": [
+        {
+          "title": "entity_registry_hash",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        },
+        {
+          "title": "treasury_hash",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        }
+      ],
+      "compiledCode": "5903150101002229800aba2aba1aab9faab9eaab9dab9a9bae0039bae0024888888896600264653001300900198049805000cdc3a400530090024888966002600460146ea800e33001300b3754007370e90024dc3a400d370e90004c028dd5002244444646644b30013005004899191919194c004c0680066eb8c0680166eb8c0680126eb4c068009222259800980f802c4c8c9660026020003159800980f1baa002806c5901f4566002602a003159800980f1baa002806c5901f45660026024003159800980f1baa002806c5901f45660026022003159800980f1baa002806c5901f45901c2038407080e0c070dd5000980f003c5901d0c068004c064004c060004c05c004c04cdd500645660026014009132332259800980c800c4c8c9660026014003159800980c1baa002803c590194566002601e003159800980c1baa002803c5901945660026018003159800980c1baa002803c59019459016202c4058602c6ea8004c0600062c80b8dd6980b000980b80098099baa00c8acc004c01c01226464b300130180028024590161bad301600130133754019159800980300244c8c96600260300050048b202c375a602c00260266ea80322b30013370e900400244c966002602e003132598009803980a1baa00189919194c004dd6980d000cdd6980d001cdd6980d0012444b3001301e00480545901c0c068004c064004c054dd5000c59013180b000c5901518099baa00c8b2022404480890112022132332259800980318099baa004899912cc004c0200062646464653001375a6038003301c301d0019bae301c0049bae301c003980e001244444940603800260360026034002602c6ea803e2b3001300d0018991991250375a603200260326034002602c6ea803e2b3001300a001899250375a6030602c6ea803e2b30013009001899250375a6030602c6ea803e264940c060c058dd5007a028405080a1014180b180a1baa0043013375401b159800980318099baa00d8a508a5040488090dd6180a0009bac3014301530153015301530153015001301430143011375400e602600c6024602600a8a504024300900130053754013149a26cac80181",
+      "hash": "bc9295fd3bbd5906239400bb5d2e0c9f6913b245a005a8e18ccf6851"
+    },
+    {
       "title": "treasury_management/treasury_management.treasury_management.spend",
       "datum": {
         "title": "datum_opt",
@@ -82,6 +135,10 @@
     "ByteArray": {
       "dataType": "bytes"
     },
+    "Data": {
+      "title": "Data",
+      "description": "Any Plutus data."
+    },
     "Int": {
       "dataType": "integer"
     },
@@ -112,6 +169,15 @@
         "$ref": "#/definitions/entity_registry~1types~1Member"
       }
     },
+    "List$Pair$aiken/crypto/VerificationKeyHash_governance/types/Vote": {
+      "dataType": "map",
+      "keys": {
+        "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+      },
+      "values": {
+        "$ref": "#/definitions/governance~1types~1Vote"
+      }
+    },
     "List$Pair$treasury_management/types/TransactionType_Int": {
       "dataType": "map",
       "keys": {
@@ -125,6 +191,12 @@
       "dataType": "list",
       "items": {
         "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+      }
+    },
+    "List$governance/types/Proposal": {
+      "dataType": "list",
+      "items": {
+        "$ref": "#/definitions/governance~1types~1Proposal"
       }
     },
     "List$treasury_management/types/PendingTransaction": {
@@ -341,6 +413,296 @@
               "$ref": "#/definitions/List$aiken~1crypto~1VerificationKeyHash"
             }
           ]
+        }
+      ]
+    },
+    "governance/types/GovernanceAction": {
+      "title": "GovernanceAction",
+      "description": "Redeemer actions",
+      "anyOf": [
+        {
+          "title": "CreateProposal",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "title",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "description",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "category",
+              "$ref": "#/definitions/governance~1types~1ProposalCategory"
+            },
+            {
+              "title": "voting_deadline",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "execution_data",
+              "$ref": "#/definitions/Data"
+            }
+          ]
+        },
+        {
+          "title": "CastVote",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": [
+            {
+              "title": "proposal_id",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "vote",
+              "$ref": "#/definitions/governance~1types~1Vote"
+            }
+          ]
+        },
+        {
+          "title": "ExecuteProposal",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": [
+            {
+              "title": "proposal_id",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        },
+        {
+          "title": "CancelProposal",
+          "dataType": "constructor",
+          "index": 3,
+          "fields": [
+            {
+              "title": "proposal_id",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        },
+        {
+          "title": "UpdateParams",
+          "dataType": "constructor",
+          "index": 4,
+          "fields": [
+            {
+              "title": "new_params",
+              "$ref": "#/definitions/governance~1types~1GovernanceParams"
+            }
+          ]
+        }
+      ]
+    },
+    "governance/types/GovernanceDatum": {
+      "title": "GovernanceDatum",
+      "description": "Governance datum - stored on-chain",
+      "anyOf": [
+        {
+          "title": "GovernanceDatum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "entity_utxo_ref",
+              "$ref": "#/definitions/cardano~1transaction~1OutputReference"
+            },
+            {
+              "title": "treasury_utxo_ref",
+              "$ref": "#/definitions/cardano~1transaction~1OutputReference"
+            },
+            {
+              "title": "params",
+              "$ref": "#/definitions/governance~1types~1GovernanceParams"
+            },
+            {
+              "title": "proposals",
+              "$ref": "#/definitions/List$governance~1types~1Proposal"
+            },
+            {
+              "title": "next_proposal_id",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "governance/types/GovernanceParams": {
+      "title": "GovernanceParams",
+      "description": "Governance parameters",
+      "anyOf": [
+        {
+          "title": "GovernanceParams",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "approval_threshold",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "minimum_voting_period",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "quorum_percentage",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "governance/types/Proposal": {
+      "title": "Proposal",
+      "description": "Proposal data structure",
+      "anyOf": [
+        {
+          "title": "Proposal",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "title",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "description",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "category",
+              "$ref": "#/definitions/governance~1types~1ProposalCategory"
+            },
+            {
+              "title": "proposer",
+              "$ref": "#/definitions/aiken~1crypto~1VerificationKeyHash"
+            },
+            {
+              "title": "creation_time",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "voting_deadline",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "status",
+              "$ref": "#/definitions/governance~1types~1ProposalStatus"
+            },
+            {
+              "title": "execution_data",
+              "$ref": "#/definitions/Data"
+            },
+            {
+              "title": "votes",
+              "$ref": "#/definitions/List$Pair$aiken~1crypto~1VerificationKeyHash_governance~1types~1Vote"
+            },
+            {
+              "title": "for_votes",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "against_votes",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "abstain_votes",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "governance/types/ProposalCategory": {
+      "title": "ProposalCategory",
+      "description": "Proposal categories",
+      "anyOf": [
+        {
+          "title": "TreasuryAction",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        },
+        {
+          "title": "ParameterChange",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": []
+        },
+        {
+          "title": "MembershipChange",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": []
+        },
+        {
+          "title": "Other",
+          "dataType": "constructor",
+          "index": 3,
+          "fields": []
+        }
+      ]
+    },
+    "governance/types/ProposalStatus": {
+      "title": "ProposalStatus",
+      "description": "Types for the Governance contract\n These types represent the core data structures used for decision-making \n processes within a SACCO entity\n Proposal status enumeration",
+      "anyOf": [
+        {
+          "title": "Active",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        },
+        {
+          "title": "Approved",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": []
+        },
+        {
+          "title": "Rejected",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": []
+        },
+        {
+          "title": "Executed",
+          "dataType": "constructor",
+          "index": 3,
+          "fields": []
+        },
+        {
+          "title": "Cancelled",
+          "dataType": "constructor",
+          "index": 4,
+          "fields": []
+        }
+      ]
+    },
+    "governance/types/Vote": {
+      "title": "Vote",
+      "description": "Vote options enumeration",
+      "anyOf": [
+        {
+          "title": "For",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        },
+        {
+          "title": "Against",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": []
+        },
+        {
+          "title": "Abstain",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": []
         }
       ]
     },
