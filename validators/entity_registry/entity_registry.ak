@@ -32,25 +32,150 @@ validator entity_registry {
           RegistryAction.CreateEntity { name, description } ->
             // Entity already exists, creation should fail
             False
-          // Other actions remain as placeholders for now
           RegistryAction.AddMember { member } -> {
+            // 1. Ensure transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
+            // 2. Check that member doesn't already exist
             let member_exists =
               dict.has_key(members_dict, member.verification_key_hash)
-            is_signed_by_admin && !member_exists
+            // 3. Validate member data (non-empty name, valid status)
+            let valid_member_data = member.name != "" && member.join_time > 0
+            if !is_signed_by_admin || member_exists || !valid_member_data {
+              False
+            } else {
+              // 4. Check if output datum is correctly updated
+              let outputs_with_inline_datum =
+                list.filter(
+                  outputs,
+                  fn(output) {
+                    when output.datum is {
+                      InlineDatum(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+              when outputs_with_inline_datum is {
+                [output] ->
+                  // Verify the output contains a properly updated datum
+                  when output.datum is {
+                    InlineDatum(data) -> {
+                      expect new_datum: RegistryDatum = data
+                      // Convert both member lists to pairs for comparison
+                      let old_members_pairs = datum.members
+                      let new_members_pairs = new_datum.members
+                      // Verify the entity is updated with correct member count
+                      let entity_updated =
+                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count + 1
+                      // Verify all existing members are preserved
+                      let contains_all_existing_members =
+                        list.all(
+                          old_members_pairs,
+                          fn(pair) { list.has(new_members_pairs, pair) },
+                        )
+                      // Verify the new member is added
+                      let contains_new_member =
+                        list.any(
+                          new_members_pairs,
+                          fn(pair) {
+                            let Pair(key, value) = pair
+                            key == member.verification_key_hash && value.name == member.name && value.join_time == member.join_time && value.status == member.status
+                          },
+                        )
+                      // Verify members list size increased by exactly one
+                      let correct_member_count =
+                        list.length(new_members_pairs) == list.length(
+                          old_members_pairs,
+                        ) + 1
+                      // Verify admins remain unchanged
+                      let admins_unchanged = new_datum.admins == datum.admins
+                      entity_updated && contains_all_existing_members && contains_new_member && correct_member_count && admins_unchanged
+                    }
+                    _ -> False
+                  }
+                _ -> False
+              }
+            }
           }
           RegistryAction.UpdateMemberStatus { member_key, new_status } -> {
+            // 1. Ensure transaction is signed by an admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
+            // 2. Verify member exists
             let member_exists = dict.has_key(members_dict, member_key)
-            is_signed_by_admin && member_exists
+            // Get the current member if it exists
+            let current_member = dict.get(members_dict, member_key)
+            if !is_signed_by_admin || !member_exists {
+              False
+            } else {
+              // 3. Check if output datum is correctly updated
+              let outputs_with_inline_datum =
+                list.filter(
+                  outputs,
+                  fn(output) {
+                    when output.datum is {
+                      InlineDatum(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+              when outputs_with_inline_datum is {
+                [output] ->
+                  // Verify the output contains a properly updated datum
+                  when output.datum is {
+                    InlineDatum(data) -> {
+                      expect new_datum: RegistryDatum = data
+                      expect Some(member_data) = current_member
+                      // Verify the entity remains unchanged
+                      let entity_unchanged =
+                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
+                      // Convert new members to dict for easier lookup
+                      let new_members_dict = dict.from_pairs(new_datum.members)
+                      // Check that the member has been updated with new status
+                      let member_updated =
+                        when dict.get(new_members_dict, member_key) is {
+                          Some(updated_member) ->
+                            updated_member.name == member_data.name && updated_member.join_time == member_data.join_time && updated_member.status == new_status
+                          None -> False
+                        }
+                      // Verify all other members remain unchanged
+                      let other_members_unchanged =
+                        list.all(
+                          datum.members,
+                          fn(pair) {
+                            let Pair(key, value) = pair
+                            if key == member_key {
+                              // Skip the updated member
+                              True
+                            } else {
+                              // Check other members remain unchanged
+                              when dict.get(new_members_dict, key) is {
+                                Some(new_value) -> new_value == value
+                                None -> False
+                              }
+                            }
+                          },
+                        )
+                      // Verify members count remains the same
+                      let member_count_unchanged =
+                        list.length(new_datum.members) == list.length(
+                          datum.members,
+                        )
+                      // Verify admins remain unchanged
+                      let admins_unchanged = new_datum.admins == datum.admins
+                      entity_unchanged && member_updated && other_members_unchanged && member_count_unchanged && admins_unchanged
+                    }
+                    _ -> False
+                  }
+                _ -> False
+              }
+            }
           }
           RegistryAction.AddAdmin { admin_key } -> {
             // 1. Ensure transaction is signed by an existing admin
@@ -112,14 +237,68 @@ validator entity_registry {
             }
           }
           RegistryAction.RemoveAdmin { admin_key } -> {
+            // 1. Ensure transaction is signed by an existing admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
+            // 2. Check that admin exists
             let admin_exists = list.has(datum.admins, admin_key)
+            // 3. Ensure we're not removing the last admin
             let will_have_admins_left = list.length(datum.admins) > 1
-            is_signed_by_admin && admin_exists && will_have_admins_left
+            if !is_signed_by_admin || !admin_exists || !will_have_admins_left {
+              False
+            } else {
+              // 4. Check if output datum is correctly updated
+              let outputs_with_inline_datum =
+                list.filter(
+                  outputs,
+                  fn(output) {
+                    when output.datum is {
+                      InlineDatum(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+              when outputs_with_inline_datum is {
+                [output] ->
+                  // Verify the output contains a properly updated datum
+                  when output.datum is {
+                    InlineDatum(data) -> {
+                      expect new_datum: RegistryDatum = data
+                      // Verify the entity remains unchanged
+                      let entity_unchanged =
+                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
+                      // Verify all admins except the removed one are preserved
+                      let contains_all_other_admins =
+                        list.all(
+                          datum.admins,
+                          fn(admin) {
+                            if admin == admin_key {
+                              True
+                            } else {
+                              // Skip the admin being removed
+                              list.has(new_datum.admins, admin)
+                            }
+                          },
+                        )
+                      // Verify the admin to remove is not in the new list
+                      let admin_removed = !list.has(new_datum.admins, admin_key)
+                      // Verify admin list size decreased by exactly one
+                      let correct_admin_count =
+                        list.length(new_datum.admins) == list.length(
+                          datum.admins,
+                        ) - 1
+                      // Verify members remain unchanged
+                      let members_unchanged = new_datum.members == datum.members
+                      entity_unchanged && contains_all_other_admins && admin_removed && correct_admin_count && members_unchanged
+                    }
+                    _ -> False
+                  }
+                _ -> False
+              }
+            }
           }
         }
       }
