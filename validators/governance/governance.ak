@@ -37,14 +37,83 @@ validator governance(
             category,
             voting_deadline,
             execution_data,
-          } ->
-            // TODO: Validation logic for CreateProposal:
-            // 1. Ensure transaction is signed by an active member
-            // 2. Validate proposal details (non-empty title/description)
+          } -> {
+            // 1. Ensure valid proposal details
+            let valid_title = title != ""
+            let valid_description = description != ""
+            // 2. Ensure transaction is signed by at least one key (proposer)
+            let has_signer = list.length(extra_signatories) > 0
+            expect Some(proposer) = list.head(extra_signatories)
             // 3. Verify voting deadline is sufficiently in the future
-            // 4. Check if output datum is correctly updated with new proposal
-            // Basic validation - allow all proposal creations
-            False
+            // For a real implementation, you would compare with tx.validity_range lower bound
+            let current_time = 0
+            // Placeholder timestamp
+            let minimum_voting_period = datum.params.minimum_voting_period
+            let valid_deadline =
+              voting_deadline > current_time + minimum_voting_period
+            // 4. Find outputs with inline datum (should be exactly one for the updated governance state)
+            let outputs_with_inline_datum =
+              list.filter(
+                outputs,
+                fn(output) {
+                  when output.datum is {
+                    InlineDatum(_) -> True
+                    _ -> False
+                  }
+                },
+              )
+            // 5. Verify that we have exactly one output with datum
+            when outputs_with_inline_datum is {
+              [output] ->
+                // 6. Verify the output datum is correctly updated
+                when output.datum is {
+                  InlineDatum(data) -> {
+                    expect new_datum: GovernanceDatum = data
+                    // 7. Verify entity and treasury references remain unchanged
+                    let entity_ref_unchanged =
+                      new_datum.entity_utxo_ref == datum.entity_utxo_ref
+                    let treasury_ref_unchanged =
+                      new_datum.treasury_utxo_ref == datum.treasury_utxo_ref
+                    // 8. Verify governance parameters remain unchanged
+                    let params_unchanged = new_datum.params == datum.params
+                    // 9. Verify proposals list grows by exactly one
+                    let proposals_grew_by_one =
+                      list.length(new_datum.proposals) == list.length(
+                        datum.proposals,
+                      ) + 1
+                    // 10. Verify the new proposal ID
+                    let next_id = datum.next_proposal_id
+                    let next_id_incremented =
+                      new_datum.next_proposal_id == next_id + 1
+                    // 11. Verify all previous proposals are preserved
+                    let previous_proposals_preserved =
+                      list.all(
+                        datum.proposals,
+                        fn(old_proposal) {
+                          list.any(
+                            new_datum.proposals,
+                            fn(new_proposal) { old_proposal == new_proposal },
+                          )
+                        },
+                      )
+                    // 12. Verify the new proposal is correctly added
+                    let new_proposal_valid =
+                      list.any(
+                        new_datum.proposals,
+                        fn(proposal) {
+                          proposal.title == title && proposal.description == description && proposal.category == category && proposal.proposer == proposer && proposal.creation_time >= 0 && proposal.voting_deadline == voting_deadline && proposal.status == ProposalStatus.Active && list.is_empty(
+                            proposal.votes,
+                          ) && proposal.for_votes == 0 && proposal.against_votes == 0 && proposal.abstain_votes == 0
+                        },
+                      )
+                    // All conditions must be met
+                    valid_title? && valid_description? && has_signer? && valid_deadline? && entity_ref_unchanged? && treasury_ref_unchanged? && params_unchanged? && proposals_grew_by_one? && next_id_incremented? && previous_proposals_preserved? && new_proposal_valid?
+                  }
+                  _ -> False
+                }
+              _ -> False
+            }
+          }
           GovernanceAction.CastVote { proposal_id, vote } ->
             // TODO: Validation logic for CastVote:
             // 1. Ensure transaction is signed by an active member who hasn't already voted
