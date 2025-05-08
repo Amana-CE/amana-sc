@@ -53,13 +53,63 @@ validator entity_registry {
             is_signed_by_admin && member_exists
           }
           RegistryAction.AddAdmin { admin_key } -> {
+            // 1. Ensure transaction is signed by an existing admin
             let is_signed_by_admin =
               list.any(
                 extra_signatories,
                 fn(key) { list.has(datum.admins, key) },
               )
+            // 2. Check that the new admin doesn't already exist
             let admin_exists = list.has(datum.admins, admin_key)
-            is_signed_by_admin && !admin_exists
+            if !is_signed_by_admin || admin_exists {
+              False
+            } else {
+              // 3. Verify output datum is correctly updated
+              // Find outputs with inline datum
+              let outputs_with_inline_datum =
+                list.filter(
+                  outputs,
+                  fn(output) {
+                    when output.datum is {
+                      InlineDatum(_) -> True
+                      _ -> False
+                    }
+                  },
+                )
+              when outputs_with_inline_datum is {
+                [output] ->
+                  // Verify the output contains a properly updated datum
+                  when output.datum is {
+                    InlineDatum(data) -> {
+                      expect new_datum: RegistryDatum = data
+                      // Verify the entity remains unchanged
+                      let entity_unchanged =
+                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
+                      // Verify the admin list contains all existing admins plus the new one
+                      let contains_all_existing_admins =
+                        list.all(
+                          datum.admins,
+                          fn(admin) { list.has(new_datum.admins, admin) },
+                        )
+                      let contains_new_admin =
+                        list.has(new_datum.admins, admin_key)
+                      // Verify the admin list size increased by exactly one
+                      let correct_admin_count =
+                        list.length(new_datum.admins) == list.length(
+                          datum.admins,
+                        ) + 1
+                      // Verify members remain unchanged
+                      let members_unchanged =
+                        dict.to_pairs(dict.from_pairs(new_datum.members)) == dict.to_pairs(
+                          dict.from_pairs(datum.members),
+                        )
+                      entity_unchanged && contains_all_existing_admins && contains_new_admin && correct_admin_count && members_unchanged
+                    }
+                    _ -> False
+                  }
+                _ -> False
+              }
+            }
           }
           RegistryAction.RemoveAdmin { admin_key } -> {
             let is_signed_by_admin =
