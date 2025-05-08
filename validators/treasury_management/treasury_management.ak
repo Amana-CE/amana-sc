@@ -1,8 +1,5 @@
 // validators/treasury_management/treasury_management.ak
-use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
-use cardano/assets.{Value, lovelace_of, policies}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use treasury_management/types.{
   PendingTransaction, SerializableValue, TransactionRecord, TransactionType,

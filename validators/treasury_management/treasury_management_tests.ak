@@ -1,7 +1,6 @@
 // validators/treasury_management/treasury_management_tests.ak
-use aiken/collection/dict
 use aiken/collection/list
-use cardano/assets.{Value, from_lovelace}
+use cardano/assets.{from_lovelace}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use mocktail.{
   complete, mock_pub_key_address, mock_script_address, mock_tx_hash, mocktail_tx,
