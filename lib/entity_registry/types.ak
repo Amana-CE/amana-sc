@@ -1,5 +1,4 @@
-use aiken/collection/dict.{Dict}
-use aiken/collection/list
+// lib/entity_registry/types.ak
 use aiken/crypto.{VerificationKeyHash}
 
 /// Types for the Entity Registry contract
@@ -34,7 +33,6 @@ pub type RegistryDatum {
   // Use a map from verification key hash to member data
   members: List<Pair<VerificationKeyHash, Member>>,
   // Addresses authorized to update the registry
-
   admins: List<VerificationKeyHash>,
 }
 

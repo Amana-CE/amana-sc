@@ -1,10 +1,7 @@
 use aiken/collection/dict
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
-use entity_registry/types.{
-  Entity, Member, MemberStatus, RegistryAction, RegistryDatum,
-}
+use entity_registry/types.{Entity, Member, RegistryAction, RegistryDatum}
 
 /// Entity Registry validator
 /// 
@@ -16,7 +13,7 @@ validator entity_registry {
   spend(
     datum_opt: Option<RegistryDatum>,
     redeemer: RegistryAction,
-    own_ref: OutputReference,
+    _own_ref: OutputReference,
     tx: Transaction,
   ) {
     // Extract transaction signatories
@@ -29,7 +26,7 @@ validator entity_registry {
         let members_dict = dict.from_pairs(datum.members)
         // Verify authorization based on redeemer action
         when redeemer is {
-          RegistryAction.CreateEntity { name, description } ->
+          RegistryAction.CreateEntity { .. } ->
             // Entity already exists, creation should fail
             False
           RegistryAction.AddMember { member } -> {
