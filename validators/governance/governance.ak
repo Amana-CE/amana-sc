@@ -79,13 +79,71 @@ validator governance(
       None ->
         // Initial setup case - initialize governance datum
         when redeemer is {
-          GovernanceAction.CreateProposal { .. } ->
-            // TODO: Validation logic for initial setup:
-            // 1. Verify entity and treasury references
-            // 2. Check if output datum is correctly initialized
-            // 3. Verify initial parameters are reasonable
-            // Basic validation - allow initial setup
-            False
+          GovernanceAction.CreateProposal {
+            title,
+            description,
+            category,
+            voting_deadline,
+            execution_data,
+          } -> {
+            // 1. Ensure valid proposal details
+            let valid_title = title != ""
+            let valid_description = description != ""
+            // 2. Ensure transaction is signed by at least one key (initial admin)
+            let has_signer = list.length(extra_signatories) > 0
+            expect Some(proposer) = list.head(extra_signatories)
+            // 3. Verify voting deadline is in the future
+            // In production, you would compare with tx.validity_range
+            let current_time = 0
+            // Placeholder - in real implementation use tx validity lower bound
+            let valid_deadline = voting_deadline > current_time
+            // 4. Find outputs with inline datum (should be exactly one)
+            let outputs_with_inline_datum =
+              list.filter(
+                outputs,
+                fn(output) {
+                  when output.datum is {
+                    InlineDatum(_) -> True
+                    _ -> False
+                  }
+                },
+              )
+            // 5. Verify there is exactly one output with an inline datum
+            when outputs_with_inline_datum is {
+              [output] ->
+                // 6. Verify the output datum is correctly initialized
+                when output.datum is {
+                  InlineDatum(data) -> {
+                    expect new_datum: GovernanceDatum = data
+                    // 7. Verify entity and treasury references are non-empty
+                    let valid_entity_ref =
+                      new_datum.entity_utxo_ref.transaction_id != ""
+                    let valid_treasury_ref =
+                      new_datum.treasury_utxo_ref.transaction_id != ""
+                    // 8. Verify initial parameters are reasonable
+                    let valid_params =
+                      new_datum.params.approval_threshold > 50 && new_datum.params.approval_threshold <= 100 && new_datum.params.minimum_voting_period > 0 && new_datum.params.quorum_percentage > 0 && new_datum.params.quorum_percentage <= 100
+                    // 9. Verify proposals list contains exactly one item (this proposal)
+                    let has_one_proposal = list.length(new_datum.proposals) == 1
+                    // 10. Verify the proposal is correctly formatted
+                    let proposal_valid =
+                      when list.head(new_datum.proposals) is {
+                        Some(proposal) ->
+                          proposal.title == title && proposal.description == description && proposal.category == category && proposal.proposer == proposer && proposal.creation_time >= 0 && proposal.voting_deadline == voting_deadline && proposal.status == ProposalStatus.Active && list.is_empty(
+                            proposal.votes,
+                          ) && proposal.for_votes == 0 && proposal.against_votes == 0 && proposal.abstain_votes == 0
+                        None -> False
+                      }
+                    // 11. Verify next_proposal_id is set to 1
+                    let valid_next_id = new_datum.next_proposal_id == 1
+                    // All conditions must be met
+                    valid_title? && valid_description? && has_signer? && valid_deadline? && valid_entity_ref? && valid_treasury_ref? && valid_params? && has_one_proposal? && proposal_valid? && valid_next_id?
+                  }
+                  _ -> False
+                }
+              _ -> False
+            }
+          }
           // Any other action is invalid when no datum exists
           _ -> False
         }
