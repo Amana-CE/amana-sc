@@ -6,8 +6,13 @@ use mocktail.{complete, mocktail_tx}
 use mocktail/virgin_key_hash.{mock_pub_key_hash}
 use mocktail/virgin_output_reference.{mock_utxo_ref}
 use treasury_management/types.{
-  PendingTransaction, TransactionRecord, TransactionType, TreasuryAction,
-  TreasuryDatum,
+  PendingTransaction, SerializableValue, TransactionRecord, TransactionType,
+  TreasuryAction, TreasuryDatum,
+}
+
+// Helper function to create a simple SerializableValue for testing
+fn empty_serializable_value() -> SerializableValue {
+  SerializableValue { policies: [] }
 }
 
 // Test that our current placeholder implementation behaves as expected
@@ -17,7 +22,7 @@ test treasury_management_placeholder_returns_true() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [],
         approval_thresholds: [],
@@ -81,7 +86,7 @@ test contribute_subsequent_success() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [],
         approval_thresholds: [],
@@ -106,7 +111,7 @@ test propose_transaction_success() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [],
         approval_thresholds: [],
@@ -150,7 +155,7 @@ test approve_transaction_success() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [pending_transaction],
         approval_thresholds: [],
@@ -184,7 +189,7 @@ test execute_transaction_success() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [pending_transaction],
         approval_thresholds: [],
@@ -218,7 +223,7 @@ test cancel_transaction_success() {
     Some(
       TreasuryDatum {
         entity_utxo_ref: mock_utxo_ref(0, 0),
-        balance: from_lovelace(10_000_000),
+        balance: empty_serializable_value(),
         transaction_history: [],
         pending_transactions: [pending_transaction],
         approval_thresholds: [],

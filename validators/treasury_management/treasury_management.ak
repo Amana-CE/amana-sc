@@ -2,11 +2,11 @@
 use aiken/collection/dict
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
-use cardano/assets.{Value, lovelace_of}
-use cardano/transaction.{OutputReference, Transaction}
+use cardano/assets.{Value, lovelace_of, policies}
+use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use treasury_management/types.{
-  PendingTransaction, TransactionRecord, TransactionType, TreasuryAction,
-  TreasuryDatum,
+  PendingTransaction, SerializableValue, TransactionRecord, TransactionType,
+  TreasuryAction, TreasuryDatum,
 }
 
 /// Treasury Management validator
@@ -23,7 +23,7 @@ validator treasury_management(entity_registry_hash: ByteArray) {
     tx: Transaction,
   ) {
     // Extract transaction signatories
-    let Transaction { extra_signatories, .. } = tx
+    let Transaction { extra_signatories, outputs, .. } = tx
 
     // Process based on the presence of existing datum
     when datum_opt is {

@@ -1,11 +1,18 @@
 // lib/treasury_management/types.ak
 use aiken/crypto.{VerificationKeyHash}
-use cardano/assets.{Value}
 use cardano/transaction.{OutputReference}
 
 /// Types for the Treasury Management contract
 /// These types represent the core data structures used for financial operations
 /// in a SACCO entity
+/// Serializable representation of Value for on-chain storage
+/// Instead of using the opaque Value type directly, we use a serializable
+/// representation that can be converted to/from Value when needed
+pub type SerializableValue {
+  // Structure to store assets as a list of policy_id -> [(asset_name, quantity)]
+  policies: List<Pair<ByteArray, List<Pair<ByteArray, Int>>>>,
+}
+
 /// Transaction types
 pub type TransactionType {
   Contribution
@@ -34,7 +41,8 @@ pub type PendingTransaction {
 /// Treasury datum - stored on-chain
 pub type TreasuryDatum {
   entity_utxo_ref: OutputReference,
-  balance: Value,
+  // Use SerializableValue instead of the opaque Value
+  balance: SerializableValue,
   transaction_history: List<TransactionRecord>,
   pending_transactions: List<PendingTransaction>,
   // Thresholds for different transaction types
