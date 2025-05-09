@@ -12,14 +12,11 @@ use governance/types.{
 /// enables members to create proposals, vote on them, and automatically execute
 /// approved decisions. The contract ensures transparent and fair governance with
 /// immutable record-keeping of all voting activities.
-validator governance(
-  entity_registry_hash: ByteArray,
-  treasury_hash: ByteArray,
-) {
+validator governance {
   spend(
     datum_opt: Option<GovernanceDatum>,
     redeemer: GovernanceAction,
-    own_ref: OutputReference,
+    _own_ref: OutputReference,
     tx: Transaction,
   ) {
     // Extract transaction signatories
