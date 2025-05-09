@@ -366,13 +366,100 @@ validator governance(
               }
             }
           }
-          GovernanceAction.CancelProposal { proposal_id } ->
-            // TODO: Validation logic for CancelProposal:
-            // 1. Ensure transaction is signed by the proposer or an admin
-            // 2. Verify proposal_id is valid and proposal is active
-            // 3. Check if output datum is correctly updated
-            // Basic validation - allow all cancellations
-            False
+          GovernanceAction.CancelProposal { proposal_id } -> {
+            // 1. Verify proposal_id is valid (within range of existing proposals)
+            let valid_id =
+              proposal_id >= 0 && proposal_id < list.length(datum.proposals)
+            if !valid_id {
+              False
+            } else {
+              // 2. Get the proposal being cancelled
+              expect Some(proposal) = list.at(datum.proposals, proposal_id)
+              // 3. Check if the proposal is active
+              let is_active = proposal.status == ProposalStatus.Active
+              if !is_active {
+                False
+              } else {
+                // 4. Check if transaction is signed by the proposer or an admin
+                // For now, we'll simply check if it's signed by the proposer
+                let is_signed_by_proposer =
+                  list.has(extra_signatories, proposal.proposer)
+                // This is a simplified check for admin - in a full implementation,
+                // we would check against a list of admin keys from the entity registry
+                // For MVP, we'll consider anyone who can sign with the proposer's key as authorized
+                if !is_signed_by_proposer {
+                  False
+                } else {
+                  // 5. Find outputs with inline datum (should be exactly one for the updated governance state)
+                  let outputs_with_inline_datum =
+                    list.filter(
+                      outputs,
+                      fn(output) {
+                        when output.datum is {
+                          InlineDatum(_) -> True
+                          _ -> False
+                        }
+                      },
+                    )
+                  when outputs_with_inline_datum is {
+                    [output] ->
+                      when output.datum is {
+                        InlineDatum(data) -> {
+                          expect new_datum: GovernanceDatum = data
+                          // 6. Verify entity and treasury references remain unchanged
+                          let entity_ref_unchanged =
+                            new_datum.entity_utxo_ref == datum.entity_utxo_ref
+                          let treasury_ref_unchanged =
+                            new_datum.treasury_utxo_ref == datum.treasury_utxo_ref
+                          // 7. Verify governance parameters remain unchanged
+                          let params_unchanged =
+                            new_datum.params == datum.params
+                          // 8. Verify proposals count remains the same
+                          let proposal_count_unchanged =
+                            list.length(new_datum.proposals) == list.length(
+                              datum.proposals,
+                            )
+                          // 9. Verify next proposal ID remains unchanged
+                          let next_id_unchanged =
+                            new_datum.next_proposal_id == datum.next_proposal_id
+                          // 10. Get the updated proposal
+                          expect Some(new_proposal) =
+                            list.at(new_datum.proposals, proposal_id)
+                          // 11. Check that all proposals except the cancelled one are unchanged
+                          let other_proposals_unchanged =
+                            list.all(
+                              list.range(0, list.length(datum.proposals)),
+                              fn(index) {
+                                if index == proposal_id {
+                                  // Skip checking the proposal that should be changed
+                                  True
+                                } else {
+                                  // Other proposals should be unchanged
+                                  expect Some(old) =
+                                    list.at(datum.proposals, index)
+                                  expect Some(new) =
+                                    list.at(new_datum.proposals, index)
+                                  old == new
+                                }
+                              },
+                            )
+                          // 12. Verify the proposal status is now Cancelled
+                          let status_updated =
+                            new_proposal.status == ProposalStatus.Cancelled
+                          // 13. Verify other proposal fields remain unchanged
+                          let core_fields_unchanged =
+                            new_proposal.title == proposal.title && new_proposal.description == proposal.description && new_proposal.category == proposal.category && new_proposal.proposer == proposal.proposer && new_proposal.creation_time == proposal.creation_time && new_proposal.voting_deadline == proposal.voting_deadline && new_proposal.execution_data == proposal.execution_data && new_proposal.votes == proposal.votes && new_proposal.for_votes == proposal.for_votes && new_proposal.against_votes == proposal.against_votes && new_proposal.abstain_votes == proposal.abstain_votes
+                          // All conditions must be met
+                          entity_ref_unchanged? && treasury_ref_unchanged? && params_unchanged? && proposal_count_unchanged? && next_id_unchanged? && other_proposals_unchanged? && status_updated? && core_fields_unchanged?
+                        }
+                        _ -> False
+                      }
+                    _ -> False
+                  }
+                }
+              }
+            }
+          }
           GovernanceAction.UpdateParams { new_params } ->
             // TODO: Validation logic for UpdateParams:
             // 1. Ensure transaction is signed by an admin
