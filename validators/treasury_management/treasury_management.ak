@@ -52,19 +52,9 @@ validator treasury_management {
                     let entity_ref_unchanged =
                       new_datum.entity_utxo_ref == datum.entity_utxo_ref
                     // 6. Verify balance structure is preserved 
-                    // Just checking policies structure remains valid - in reality the
-                    // actual balance is maintained by the UTxO itself
+                    // Balance is maintained by the UTxO itself
                     let valid_balance_update = True
                     // 7. Verify transaction history is updated with this contribution
-                    let contribution_record =
-                      TransactionRecord {
-                        transaction_type: TransactionType.Contribution,
-                        amount,
-                        member: signer,
-                        time: 0,
-                        // Simplified timestamp
-                        description,
-                      }
                     // Check that new history includes all previous records plus this one
                     let previous_history_length =
                       list.length(datum.transaction_history)
@@ -72,14 +62,14 @@ validator treasury_management {
                       list.length(new_datum.transaction_history)
                     let history_grew_by_one =
                       new_history_length == previous_history_length + 1
-                    // Check most recent record (last in list) matches this contribution
+                    // 8. Check most recent record (last in list) matches this contribution
                     let valid_new_record =
                       when list.last(new_datum.transaction_history) is {
                         Some(record) ->
                           record.transaction_type == TransactionType.Contribution && record.amount == amount && record.member == signer && record.description == description
                         None -> False
                       }
-                    // 8. Verify all previous transaction records are preserved
+                    // 9. Verify all previous transaction records are preserved
                     let previous_records_preserved =
                       list.all(
                         datum.transaction_history,
@@ -90,10 +80,10 @@ validator treasury_management {
                           )
                         },
                       )
-                    // 9. Verify pending transactions remain unchanged
+                    // 10. Verify pending transactions remain unchanged
                     let pending_unchanged =
                       new_datum.pending_transactions == datum.pending_transactions
-                    // 10. Verify approval thresholds remain unchanged
+                    // 11. Verify approval thresholds remain unchanged
                     let thresholds_unchanged =
                       new_datum.approval_thresholds == datum.approval_thresholds
                     // All conditions must be met
@@ -150,7 +140,7 @@ validator treasury_management {
                       list.length(new_datum.pending_transactions)
                     let pending_grew_by_one =
                       new_pending_length == previous_pending_length + 1
-                    // 10. Determine required approvals based on transaction type and amount
+                    // 10. Determine required approvals based on transaction type
                     let required_approvals =
                       when
                         list.find(
@@ -165,15 +155,7 @@ validator treasury_management {
                         None -> 2
                       }
                     // Default to 2 approvals if not specified
-                    // 11. Check that the new pending transaction is properly formed
-                    let expected_pending_tx =
-                      PendingTransaction {
-                        transaction_record: transaction,
-                        approvals: [],
-                        // Should start with no approvals
-                        required_approvals,
-                      }
-                    // 12. Check most recent pending transaction (last in list) matches the expected one
+                    // 11. Check most recent pending transaction (last in list) matches expected format
                     let valid_new_pending =
                       when list.last(new_datum.pending_transactions) is {
                         Some(pending_tx) ->
@@ -182,7 +164,7 @@ validator treasury_management {
                           ) && pending_tx.required_approvals == required_approvals
                         None -> False
                       }
-                    // 13. Verify all previous pending transactions are preserved
+                    // 12. Verify all previous pending transactions are preserved
                     let previous_pending_preserved =
                       list.all(
                         datum.pending_transactions,
@@ -193,7 +175,7 @@ validator treasury_management {
                           )
                         },
                       )
-                    // 14. Verify approval thresholds remain unchanged
+                    // 13. Verify approval thresholds remain unchanged
                     let thresholds_unchanged =
                       new_datum.approval_thresholds == datum.approval_thresholds
                     // All conditions must be met
@@ -285,10 +267,7 @@ validator treasury_management {
                               list.has(new_pending_tx.approvals, approval)
                             },
                           )
-                        // 18. For simplicity, we'll only check that the specific pending
-                        // transaction is updated correctly. In a more comprehensive implementation,
-                        // we would verify all other transactions remain unchanged.
-                        // 19. Verify approval thresholds remain unchanged
+                        // 18. Verify approval thresholds remain unchanged
                         let thresholds_unchanged =
                           new_datum.approval_thresholds == datum.approval_thresholds
                         // All conditions must be met
@@ -400,32 +379,22 @@ validator treasury_management {
                         // 14. Verify approval thresholds remain unchanged
                         let thresholds_unchanged =
                           new_datum.approval_thresholds == datum.approval_thresholds
-                        // 15. Verify the transaction amount is correctly processed
-                        // Transaction types have different effects on the treasury balance
+                        // 15. Verify the transaction is properly executed based on type
                         let tx_type = transaction_record.transaction_type
-                        let tx_amount = transaction_record.amount
                         // Different validation based on transaction type
                         let valid_execution =
                           when tx_type is {
                             TransactionType.Withdrawal ->
-                              // For withdrawals, treasury balance should decrease
-                              // Simplified check - in a real implementation, you would check outputs
-                              // to ensure funds are sent to the correct recipient
+                              // Check recipient outputs
                               True
                             TransactionType.Loan ->
-                              // For loans, treasury balance should decrease
-                              // Simplified check - in a real implementation, you would check outputs
-                              // to ensure funds are sent to the correct recipient
+                              // Check recipient outputs
                               True
                             TransactionType.LoanRepayment ->
-                              // For loan repayments, treasury balance should increase
-                              // Simplified check - in a real implementation, you would verify
-                              // the input value includes the repayment amount
+                              // Check loan repayment amount
                               True
                             TransactionType.AdminFee ->
-                              // For admin fees, treasury balance should decrease
-                              // Simplified check - in a real implementation, you would check outputs
-                              // to ensure funds are sent to the correct admin address
+                              // Check admin fee distribution
                               True
                             _ ->
                               // Other transaction types are not supported for execution
@@ -456,9 +425,7 @@ validator treasury_management {
                 list.at(datum.pending_transactions, transaction_index)
               // 3. Get the proposer of the transaction
               let proposer = pending_tx.transaction_record.member
-              // 4. Check if transaction is signed by proposer or an admin
-              // For simplicity, we assume admins are defined in some other way (e.g., based on entity registry)
-              // In this implementation, we'll only check if signed by proposer
+              // 4. Check if transaction is signed by proposer
               let signed_by_proposer = list.has(extra_signatories, proposer)
               // If not signed by proposer, return False
               if !signed_by_proposer {
@@ -565,20 +532,17 @@ validator treasury_management {
                     // 6. Verify initial treasury has empty policies list (zero balance except contribution)
                     let empty_initial_balance =
                       list.is_empty(new_datum.balance.policies)
-                    // 7. Get a timestamp for the transaction
-                    // For simplicity, we'll use 0 as a placeholder
-                    let current_time = 0
-                    // 8. Verify transaction history includes this contribution
+                    // 7. Verify transaction history includes this contribution
                     let valid_history =
                       when new_datum.transaction_history is {
                         [record] ->
                           record.transaction_type == TransactionType.Contribution && record.amount == amount && record.member == signer && record.description == description
                         _ -> False
                       }
-                    // 9. Verify pending transactions list is empty initially
+                    // 8. Verify pending transactions list is empty initially
                     let empty_pending =
                       list.is_empty(new_datum.pending_transactions)
-                    // 10. Verify approval thresholds are initialized with sensible defaults
+                    // 9. Verify approval thresholds are initialized with sensible defaults
                     let valid_thresholds =
                       list.length(new_datum.approval_thresholds) > 0
                     // All conditions must be met

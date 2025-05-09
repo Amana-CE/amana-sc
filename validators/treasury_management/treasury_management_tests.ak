@@ -31,18 +31,21 @@ test treasury_management_placeholder_returns_true() {
         approval_thresholds: [],
       },
     )
-  // Create a simple redeemer for testing compilation
-  let redeemer =
-    TreasuryAction.Contribute {
-      amount: 5_000_000,
-      description: "Initial Contribution",
-    }
+
   // Create a mock transaction
   let tx = mocktail_tx() |> complete()
   // Reference the validator directly
-  // Using a ByteArray literal (#"") instead of a String literal (@"")
   let result =
-    treasury_management(#"", datum, redeemer, mock_utxo_ref(0, 0), tx)
+    treasury_management(
+      #"",
+      datum,
+      TreasuryAction.Contribute {
+        amount: 5_000_000,
+        description: "Initial Contribution",
+      },
+      mock_utxo_ref(0, 0),
+      tx,
+    )
   // This should pass since our validator returns True
   result == True
 }
@@ -69,29 +72,25 @@ test treasury_management_fallback_returns_false() {
 
 // Test 1: Contribute - succeeds for initial contribution
 test contribute_initial_success() {
-  // Create a redeemer for initial contribution
-  let redeemer =
-    TreasuryAction.Contribute {
-      amount: 5_000_000,
-      description: "Initial Contribution",
-    }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  // We expect this to be True since our helper is a placeholder
-  treasury_management(#"", None, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    None,
+    TreasuryAction.Contribute {
+      amount: 5_000_000,
+      description: "Initial Contribution",
+    },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 1b: Contribute - succeeds for initial contribution with proper validation
 test contribute_initial_validation() {
   // Create a signer
   let signer = mock_pub_key_hash(0)
-  // Create a redeemer for initial contribution
-  let redeemer =
-    TreasuryAction.Contribute {
-      amount: 5_000_000,
-      description: "Initial Contribution",
-    }
   // Create transaction history record expected in the output datum
   let expected_record =
     TransactionRecord {
@@ -99,20 +98,17 @@ test contribute_initial_validation() {
       amount: 5_000_000,
       member: signer,
       time: 0,
-      // We use 0 as a simplified timestamp in our implementation
       description: "Initial Contribution",
     }
   // Create the expected output datum
   let expected_datum =
     TreasuryDatum {
       entity_utxo_ref: mock_utxo_ref(1, 0),
-      // Some valid entity reference
       balance: empty_serializable_value(),
       transaction_history: [expected_record],
       pending_transactions: [],
       approval_thresholds: [Pair(TransactionType.Withdrawal, 2)],
     }
-  // Example default threshold
   // Create a mock transaction with a signer and an output with the expected datum
   let tx =
     mocktail_tx()
@@ -153,16 +149,19 @@ test contribute_subsequent_success() {
         approval_thresholds: [],
       },
     )
-  // Create a redeemer for another contribution
-  let redeemer =
-    TreasuryAction.Contribute {
-      amount: 5_000_000,
-      description: "Another Contribution",
-    }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  treasury_management(#"", existing_datum, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    existing_datum,
+    TreasuryAction.Contribute {
+      amount: 5_000_000,
+      description: "Another Contribution",
+    },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 3: ProposeTransaction - succeeds with valid data
@@ -187,13 +186,16 @@ test propose_transaction_success() {
       time: 1625097600000,
       description: "Test Withdrawal",
     }
-  // Create redeemer to propose the transaction
-  let redeemer =
-    TreasuryAction.ProposeTransaction { transaction: transaction_record }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  treasury_management(#"", existing_datum, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    existing_datum,
+    TreasuryAction.ProposeTransaction { transaction: transaction_record },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 3b: ProposeTransaction - validates transaction proposal format
@@ -215,7 +217,6 @@ test propose_transaction_validation() {
       transaction_type: TransactionType.Withdrawal,
       amount: 2_000_000,
       member: signer,
-      // The proposer
       time: 1625097600000,
       description: "Test Withdrawal",
     }
@@ -226,7 +227,6 @@ test propose_transaction_validation() {
       approvals: [],
       required_approvals: 2,
     }
-  // From the approval thresholds
   // Expected output datum
   let expected_datum =
     TreasuryDatum {
@@ -236,9 +236,6 @@ test propose_transaction_validation() {
       pending_transactions: [expected_pending],
       approval_thresholds: existing_datum.approval_thresholds,
     }
-  // Create redeemer to propose the transaction
-  let redeemer =
-    TreasuryAction.ProposeTransaction { transaction: transaction_record }
   // Create a mock transaction with a signer and an output with the expected datum
   let tx =
     mocktail_tx()
@@ -310,12 +307,16 @@ test approve_transaction_success() {
         approval_thresholds: [],
       },
     )
-  // Create redeemer to approve the transaction
-  let redeemer = TreasuryAction.ApproveTransaction { transaction_index: 0 }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  treasury_management(#"", existing_datum, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    existing_datum,
+    TreasuryAction.ApproveTransaction { transaction_index: 0 },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 4b: ApproveTransaction - validates approval format
@@ -360,8 +361,6 @@ test approve_transaction_validation() {
       pending_transactions: [expected_pending_updated],
       approval_thresholds: existing_datum.approval_thresholds,
     }
-  // Create redeemer to approve the transaction
-  let redeemer = TreasuryAction.ApproveTransaction { transaction_index: 0 }
   // Create a mock transaction with an approver and an output with the expected datum
   let tx =
     mocktail_tx()
@@ -431,12 +430,16 @@ test execute_transaction_success() {
         approval_thresholds: [],
       },
     )
-  // Create redeemer to execute the transaction
-  let redeemer = TreasuryAction.ExecuteTransaction { transaction_index: 0 }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  treasury_management(#"", existing_datum, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    existing_datum,
+    TreasuryAction.ExecuteTransaction { transaction_index: 0 },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 5b: ExecuteTransaction - validates transaction execution
@@ -476,11 +479,8 @@ test execute_transaction_validation() {
       balance: existing_datum.balance,
       transaction_history: [transaction_record],
       pending_transactions: [],
-      // Transaction has been moved from pending to history
       approval_thresholds: existing_datum.approval_thresholds,
     }
-  // Create redeemer to execute the transaction
-  let redeemer = TreasuryAction.ExecuteTransaction { transaction_index: 0 }
   // Create a mock transaction with the proper output structure
   let tx =
     mocktail_tx()
@@ -544,12 +544,16 @@ test cancel_transaction_success() {
         approval_thresholds: [],
       },
     )
-  // Create redeemer to cancel the transaction
-  let redeemer = TreasuryAction.CancelTransaction { transaction_index: 0 }
   // Create a transaction (details don't matter for this test)
   let tx = mocktail_tx() |> complete()
   // Call our helper function, which will return True
-  treasury_management(#"", existing_datum, redeemer, mock_utxo_ref(0, 0), tx) == True
+  treasury_management(
+    #"",
+    existing_datum,
+    TreasuryAction.CancelTransaction { transaction_index: 0 },
+    mock_utxo_ref(0, 0),
+    tx,
+  ) == True
 }
 
 // Test 6b: CancelTransaction - validates transaction cancellation
