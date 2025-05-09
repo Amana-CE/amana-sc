@@ -1,14 +1,12 @@
 // validators/governance/governance_tests.ak
-use aiken/collection/list
 use cardano/assets.{from_lovelace}
-use cardano/transaction.{InlineDatum, OutputReference, Transaction}
+use cardano/transaction.{OutputReference, Transaction}
 use governance/types.{
   GovernanceAction, GovernanceDatum, GovernanceParams, Proposal,
   ProposalCategory, ProposalStatus, Vote,
 }
 use mocktail.{
-  complete, mock_script_address, mocktail_tx, required_signer_hash, tx_out,
-  tx_out_inline_datum,
+  complete, mock_script_address, mocktail_tx, tx_out, tx_out_inline_datum,
 }
 use mocktail/virgin_key_hash.{mock_pub_key_hash}
 use mocktail/virgin_output_reference.{mock_utxo_ref}

@@ -12,11 +12,11 @@ use treasury_management/types.{
 /// including contributions, withdrawals, and loans. It ensures transparent
 /// fund management with multi-signature approval mechanisms and maintains
 /// an immutable record of all financial activities.
-validator treasury_management(entity_registry_hash: ByteArray) {
+validator treasury_management {
   spend(
     datum_opt: Option<TreasuryDatum>,
     redeemer: TreasuryAction,
-    own_ref: OutputReference,
+    _own_ref: OutputReference,
     tx: Transaction,
   ) {
     // Extract transaction signatories

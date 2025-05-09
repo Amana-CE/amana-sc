@@ -3,7 +3,7 @@ use aiken/collection/list
 use cardano/assets.{from_lovelace}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use mocktail.{
-  complete, mock_pub_key_address, mock_script_address, mock_tx_hash, mocktail_tx,
+  complete, mock_pub_key_address, mock_script_address, mocktail_tx,
   required_signer_hash, tx_out, tx_out_inline_datum,
 }
 use mocktail/virgin_key_hash.{mock_pub_key_hash}
@@ -589,8 +589,7 @@ test cancel_transaction_validation() {
       pending_transactions: [],
       approval_thresholds: existing_datum.approval_thresholds,
     }
-  // Create redeemer to cancel the transaction
-  let redeemer = TreasuryAction.CancelTransaction { transaction_index: 0 }
+
   // Create a mock transaction with the proposer as signer and an output with the expected datum
   let tx =
     mocktail_tx()

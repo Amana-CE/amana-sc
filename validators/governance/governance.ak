@@ -1,6 +1,5 @@
 // validators/governance/governance.ak
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
 use governance/types.{
   GovernanceAction, GovernanceDatum, GovernanceParams, Proposal,
