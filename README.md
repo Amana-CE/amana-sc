@@ -1,132 +1,94 @@
-# Amana Chain Entities (Amana CE)
+# Amana Chain Entities
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Aiken](https://img.shields.io/badge/aiken-v1.1.15-blue)](https://aiken-lang.org)
-[![Cardano](https://img.shields.io/badge/cardano-plutus%20v3-green)](https://cardano.org)
+A blockchain-based platform that transforms SACCO operations through transparent governance and decentralized finance solutions built on Cardano.
 
-Amana Chain Entities (Amana CE) is a blockchain-based platform designed to revolutionize Savings and Credit Cooperative Organizations (SACCOs) in Africa by leveraging Cardano blockchain technology to enhance transparency, improve governance, and increase operational efficiency.
+## Overview
 
-## 🌟 Features
+Amana Chain Entities (Amana CE) addresses key challenges facing Savings and Credit Cooperative Organizations (SACCOs):
 
-Amana CE offers a modular platform with the following components:
+- **Funds Mismanagement** - Through transparent blockchain transactions
+- **Poor Governance** - With decentralized decision-making
+- **Limited Access** - Eliminating geographical constraints
 
-- **Entity Management**: Create and manage digital SACCO entities with configurable parameters
-- **Member Management**: Register and manage members with role-based permissions
-- **Treasury Management**: Handle financial operations with secure multi-signature approval
-- **Governance System**: Facilitate transparent decision-making through on-chain voting
+## Smart Contract Architecture
 
-## 📋 Project Structure
-
-The smart contracts are organized into a modular architecture:
+Our platform consists of three interconnected smart contracts:
 
 ```
-amana-contracts/
-├── lib/                        # Libraries and shared utilities
-│   ├── common/                 # Common utilities and shared types
-│   ├── entity/                 # Entity registration module
-│   ├── treasury/               # Treasury management module
-│   └── governance/             # Governance module
-└── validators/                 # Main validator scripts
-    ├── entity_registry.ak      # Entity registry validator
-    ├── treasury.ak             # Treasury management validator
-    └── governance.ak           # Governance validator
+┌──────────────────┐    ┌───────────────────┐    ┌──────────────────┐
+│  Entity Registry │    │     Treasury      │    │    Governance    │
+│    Contract      │◄───┤    Management     │◄───┤     Contract     │
+│                  │    │     Contract      │    │                  │
+└────────┬─────────┘    └─────────┬─────────┘    └────────┬─────────┘
+         │                        │                       │
+         ▼                        ▼                       ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                           Cardano Blockchain                        │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Getting Started
+- **Entity Registry**: Manages SACCO entities and their members
+- **Treasury Management**: Handles financial operations with multi-signature approval
+- **Governance**: Facilitates decision-making through proposals and voting
 
-### Prerequisites
+## Documentation
 
-- [Aiken](https://aiken-lang.org/installation-guide) (v1.1.15 or higher)
-- [Cardano node](https://docs.cardano.org/getting-started/installing-the-cardano-node/) (optional for local testing)
-- Node.js and npm (for off-chain code)
+Detailed documentation is available in the `/documentation` directory:
 
-### Installation
+- [Entity Registry](./documentation/ENTITY_REGISTRY.md)
+- [Treasury Management](./documentation/TREASURY_MANAGEMENT.md)
+- [Governance](./documentation/GOVERNANCE.md)
 
-1. Clone this repository
-   ```bash
-   git clone https://github.com/amanace/amana-contracts.git
-   cd amana-contracts
-   ```
+## Getting Started
 
-2. Build the smart contracts
-   ```bash
-   aiken build
-   ```
+### Requirements
 
-3. Run tests
-   ```bash
-   aiken check
-   ```
+- Aiken v1.1.15 or higher
+- Cardano development environment
 
-## 📝 Usage
-
-### Building the Smart Contracts
+### Build and Test
 
 ```bash
+# Build the contracts
 aiken build
-```
 
-This will compile the contracts and generate a `plutus.json` file containing compiled contract code.
-
-### Testing the Smart Contracts
-
-```bash
+# Run the test suite
 aiken check
 ```
 
-### Generating Documentation
+## Key Features
 
-```bash
-aiken docs
+### Entity Registry
+- SACCO entity creation and management
+- Member registration with status tracking
+- Admin management with multi-admin support
+
+### Treasury Management
+- Transparent fund management
+- Multi-signature transaction approval
+- Comprehensive transaction history
+
+### Governance
+- Proposal creation and management
+- Transparent voting system
+- Automatic execution of approved decisions
+
+## Project Structure
+
+```
+amana-contracts/
+├── aiken.toml               # Project configuration
+├── lib/                     # Shared library code
+│   ├── entity_registry/     # Entity Registry types
+│   ├── governance/          # Governance types
+│   └── treasury_management/ # Treasury Management types
+├── validators/              # Smart contracts
+│   ├── entity_registry/     # Entity Registry contract
+│   ├── governance/          # Governance contract
+│   └── treasury_management/ # Treasury Management contract
+└── documentation/           # Detailed documentation
 ```
 
-This will generate HTML documentation for the project.
+## License
 
-### Viewing Contract Addresses
-
-```bash
-aiken blueprint address
-```
-
-## 📘 Documentation
-
-- [Project Structure](docs/project-structure.md)
-- [Testing Guide](docs/testing-guide.md)
-- [Deployment Guide](docs/deployment-guide.md)
-
-## 🔧 Development
-
-We welcome contributions to Amana CE! Please see our [Contribution Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Create a feature branch
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes and test them
-   ```bash
-   aiken check
-   ```
-
-3. Build the contracts to ensure they compile
-   ```bash
-   aiken build
-   ```
-
-4. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgements
-
-- The [Aiken](https://aiken-lang.org) team for their amazing Cardano smart contract language
-- The [Cardano](https://cardano.org) community for their support and inspiration
-- All contributors to this project
-
-## 📬 Contact
-
-For questions or support, please open an issue on this repository or contact the maintainers.
+Apache License 2.0
