@@ -6,7 +6,7 @@ use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{from_lovelace}
 use cardano/transaction.{InlineDatum, OutputReference, Transaction}
-use entity_registry/types.{Entity, Member, RegistryAction, RegistryDatum}
+use entity_registry/types.{Entity, Member, RegistryDatum}
 use mocktail.{
   complete, mock_script_address, mocktail_tx, required_signer_hash, tx_out,
   tx_out_inline_datum,
