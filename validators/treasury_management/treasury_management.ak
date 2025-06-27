@@ -1,8 +1,6 @@
 // treasury_management/treasury_management.ak
 use aiken/collection/list
-use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{lovelace_of}
-use cardano/script_context.{ScriptContext}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction,
 }
@@ -10,14 +8,13 @@ use treasury_management/types.{
   PendingTransaction, TransactionType, TreasuryAction, TreasuryDatum,
 }
 
-validator treasury_management(entity_registry_hash: ByteArray) {
+validator treasury_management(_entity_registry_hash: ByteArray) {
   spend(
     datum_opt: Option<TreasuryDatum>,
     redeemer: TreasuryAction,
     _own_ref: OutputReference,
-    ctx: ScriptContext,
+    transaction: Transaction,
   ) {
-    let ScriptContext { transaction, .. } = ctx
     let Transaction { inputs, outputs, extra_signatories, .. } = transaction
 
     when datum_opt is {
@@ -149,22 +146,20 @@ validator treasury_management(entity_registry_hash: ByteArray) {
   }
 
   else(_) {
-    False
+    fail
   }
 }
 
-// FIXED: Use concrete Output type instead of generic 'o'
+// Helper functions
 fn find_treasury_output(outputs: List<Output>) -> Option<Output> {
   list.find(
     outputs,
     fn(output) {
       when output.datum is {
-        InlineDatum(data) ->
-          if data is TreasuryDatum {
-            True
-          } else {
-            False
-          }
+        InlineDatum(data) -> {
+          expect _: TreasuryDatum = data
+          True
+        }
         _ -> False
       }
     },
@@ -172,22 +167,10 @@ fn find_treasury_output(outputs: List<Output>) -> Option<Output> {
 }
 
 fn get_own_input_value(inputs: List<Input>) -> Int {
-  expect Some(own_input) =
-    list.find(
-      inputs,
-      fn(input) {
-        when input.output.datum is {
-          InlineDatum(data) ->
-            if data is TreasuryDatum {
-              True
-            } else {
-              False
-            }
-          _ -> False
-        }
-      },
-    )
-  lovelace_of(own_input.output.value)
+  when inputs is {
+    [input, ..] -> lovelace_of(input.output.value)
+    [] -> 0
+  }
 }
 
 fn find_pending_transaction(
@@ -198,33 +181,17 @@ fn find_pending_transaction(
 }
 
 fn get_next_id(pending_transactions: List<PendingTransaction>) -> Int {
-  list.foldl(
-    pending_transactions,
-    0,
-    fn(tx, acc) {
-      if tx.id >= acc {
-        tx.id + 1
-      } else {
-        acc
-      }
-    },
-  )
+  list.length(pending_transactions)
 }
 
 fn get_threshold(
-  thresholds: List<Pair<TransactionType, Int>>,
-  tx_type: TransactionType,
+  approval_thresholds: List<Pair<TransactionType, Int>>,
+  transaction_type: TransactionType,
 ) -> Int {
   when
-    list.find(
-      thresholds,
-      fn(pair) {
-        let Pair(threshold_type, _) = pair
-        threshold_type == tx_type
-      },
-    )
+    list.find(approval_thresholds, fn(pair) { pair.1st == transaction_type })
   is {
-    Some(Pair(_, threshold)) -> threshold
+    Some(pair) -> pair.2nd
     None -> 2
   }
   // Default threshold
