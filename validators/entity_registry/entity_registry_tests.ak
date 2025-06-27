@@ -177,13 +177,6 @@ test add_member_validation_failures() {
   let non_admin = mock_pub_key_hash(2)
   let current_time = 1625097600000
 
-  let existing_datum =
-    RegistryDatum {
-      entity: create_sample_entity(admin, current_time - 86400000),
-      members: [],
-      admin,
-    }
-
   // Non-admin trying to add member
   let non_admin_tx =
     mocktail_tx()
