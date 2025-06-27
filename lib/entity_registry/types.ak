@@ -1,8 +1,9 @@
 // lib/entity_registry/types.ak
+// Entity Registry Types - MVP with NFT Integration
+// Types for single contract serving multiple SACCO entities
+
 use aiken/crypto.{VerificationKeyHash}
 
-/// Types for the Entity Registry contract
-/// These types represent the core data structures used for SACCO entities and their members
 /// SACCO entity metadata
 pub type Entity {
   name: ByteArray,
@@ -12,43 +13,32 @@ pub type Entity {
   member_count: Int,
 }
 
-/// Member record
+/// Member record with NFT integration
 pub type Member {
   name: ByteArray,
   verification_key_hash: VerificationKeyHash,
   join_time: Int,
-  status: MemberStatus,
+  nft_token_name: ByteArray,
 }
 
-/// Member status enumeration
-pub type MemberStatus {
-  Active
-  Inactive
-  Suspended
-}
-
-/// Registry datum - stored on-chain
+/// Registry datum - stored on-chain for each SACCO entity
 pub type RegistryDatum {
   entity: Entity,
-  // Use a map from verification key hash to member data
-  members: List<Pair<VerificationKeyHash, Member>>,
-  // Addresses authorized to update the registry
-  admins: List<VerificationKeyHash>,
+  members: List<Member>,
+  admin: VerificationKeyHash,
 }
 
-/// Redeemer actions
+/// Redeemer actions for entity operations
 pub type RegistryAction {
-  // Create a new SACCO entity
   CreateEntity { name: ByteArray, description: ByteArray }
-  // Add a new member to the entity
   AddMember { member: Member }
-  // Update member status
-  UpdateMemberStatus {
-    member_key: VerificationKeyHash,
-    new_status: MemberStatus,
-  }
-  // Add a new admin
-  AddAdmin { admin_key: VerificationKeyHash }
-  // Remove an admin
-  RemoveAdmin { admin_key: VerificationKeyHash }
 }
+// POST-MVP EXTENSIONS:
+// - Add MemberStatus enum (Active/Inactive/Suspended)
+// - Multi-admin support with role-based permissions
+// - Member levels and KYC verification status
+// - Governance configuration and treasury settings
+// - Compliance framework and audit trails
+// - Enhanced redeemer actions for status updates
+// - Cross-entity member portability
+// - Integration with external systems

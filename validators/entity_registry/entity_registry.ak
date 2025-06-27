@@ -1,14 +1,159 @@
-use aiken/collection/dict
+// validators/entity_registry/entity_registry.ak
+// Entity Registry Validator - MVP with NFT Integration
+// Single contract serving multiple SACCO entities
+
 use aiken/collection/list
-use cardano/transaction.{InlineDatum, OutputReference, Transaction}
+use aiken/crypto.{VerificationKeyHash}
+use aiken/primitive/bytearray
+use cardano/transaction.{InlineDatum, Output, OutputReference, Transaction}
 use entity_registry/types.{Entity, Member, RegistryAction, RegistryDatum}
 
-/// Entity Registry validator
+// Helper Functions - defined before validator
+
+/// Extract current time from transaction validity range - simplified for MVP
+fn get_current_time(tx: Transaction) -> Int {
+  // For MVP, we use a simple approach
+  // In production, you would properly extract from tx.validity_range
+  1625097600000
+  // Placeholder timestamp for MVP
+}
+
+/// Validate entity creation inputs
+fn validate_entity_inputs(name: ByteArray, description: ByteArray) -> Bool {
+  let valid_name = name != #"" && bytearray.length(name) <= 64
+  let valid_description =
+    description != #"" && bytearray.length(description) <= 256
+  valid_name && valid_description
+}
+
+/// Validate member data including NFT token name
+fn validate_member_data(member: Member, current_time: Int) -> Bool {
+  let valid_name = member.name != #"" && bytearray.length(member.name) <= 64
+  let valid_vkh = member.verification_key_hash != #""
+  let valid_time = member.join_time > 0 && member.join_time <= current_time
+  let valid_nft_name = member.nft_token_name != #""
+  valid_name && valid_vkh && valid_time && valid_nft_name
+}
+
+/// Validate NFT token name follows expected pattern
+fn validate_nft_token_name(
+  token_name: ByteArray,
+  _member_vkh: VerificationKeyHash,
+) -> Bool {
+  // For MVP: Simple validation that token name is not empty
+  // POST-MVP: Implement proper token name derivation from member VKH
+  token_name != #""
+}
+
+/// Check if member already exists in entity
+fn member_already_exists(
+  members: List<Member>,
+  vkh: VerificationKeyHash,
+) -> Bool {
+  list.any(members, fn(member) { member.verification_key_hash == vkh })
+}
+
+/// Verify entity creation output is correctly formatted
+fn verify_create_entity_output(
+  outputs: List<Output>,
+  name: ByteArray,
+  description: ByteArray,
+  founder: VerificationKeyHash,
+  current_time: Int,
+) -> Bool {
+  // Find outputs with inline datum (new entity UTxO)
+  let script_outputs =
+    list.filter(
+      outputs,
+      fn(output) {
+        when output.datum is {
+          InlineDatum(_) -> True
+          _ -> False
+        }
+      },
+    )
+  when script_outputs is {
+    [output] ->
+      when output.datum is {
+        InlineDatum(data) -> {
+          expect new_datum: RegistryDatum = data
+          // Verify entity is properly initialized
+          let entity_valid =
+            new_datum.entity.name == name && new_datum.entity.description == description && new_datum.entity.founder == founder && new_datum.entity.creation_time >= current_time && new_datum.entity.member_count == 0
+          // Verify admin is set to founder
+          let admin_valid = new_datum.admin == founder
+          // Verify members list is empty initially
+          let members_valid = list.is_empty(new_datum.members)
+          entity_valid && admin_valid && members_valid
+        }
+        _ -> False
+      }
+    _ -> False
+  }
+}
+
+/// Verify member addition output is correctly formatted
+fn verify_add_member_output(
+  outputs: List<Output>,
+  old_datum: RegistryDatum,
+  new_member: Member,
+) -> Bool {
+  // Find outputs with inline datum (updated entity UTxO)
+  let script_outputs =
+    list.filter(
+      outputs,
+      fn(output) {
+        when output.datum is {
+          InlineDatum(_) -> True
+          _ -> False
+        }
+      },
+    )
+  when script_outputs is {
+    [output] ->
+      when output.datum is {
+        InlineDatum(data) -> {
+          expect new_datum: RegistryDatum = data
+          // Verify entity fields remain unchanged except member_count
+          let entity_unchanged =
+            new_datum.entity.name == old_datum.entity.name && new_datum.entity.description == old_datum.entity.description && new_datum.entity.founder == old_datum.entity.founder && new_datum.entity.creation_time == old_datum.entity.creation_time && new_datum.entity.member_count == old_datum.entity.member_count + 1
+          // Verify admin remains unchanged
+          let admin_unchanged = new_datum.admin == old_datum.admin
+          // Verify all existing members are preserved
+          let existing_members_preserved =
+            list.all(
+              old_datum.members,
+              fn(old_member) {
+                list.any(
+                  new_datum.members,
+                  fn(new_member_check) { old_member == new_member_check },
+                )
+              },
+            )
+          // Verify new member is added correctly
+          let new_member_added =
+            list.any(
+              new_datum.members,
+              fn(member) {
+                member.name == new_member.name && member.verification_key_hash == new_member.verification_key_hash && member.join_time == new_member.join_time && member.nft_token_name == new_member.nft_token_name
+              },
+            )
+          // Verify member count is correct
+          let member_count_correct =
+            list.length(new_datum.members) == list.length(old_datum.members) + 1
+          entity_unchanged && admin_unchanged && existing_members_preserved && new_member_added && member_count_correct
+        }
+        _ -> False
+      }
+    _ -> False
+  }
+}
+
+/// Entity Registry validator - MVP Version with NFT Integration
 /// 
-/// This validator manages the creation and maintenance of SACCO entities and
-/// their members. It serves as the identity layer for the Amana CE platform,
-/// ensuring that only authorized participants can access treasury funds and
-/// participate in governance.
+/// Single contract deployment serving multiple SACCO entities.
+/// Each SACCO is a separate UTxO at this contract address.
+/// Includes basic NFT verification for member certificates.
 validator entity_registry {
   spend(
     datum_opt: Option<RegistryDatum>,
@@ -16,344 +161,69 @@ validator entity_registry {
     _own_ref: OutputReference,
     tx: Transaction,
   ) {
-    // Extract transaction signatories
-    let Transaction { extra_signatories, outputs, .. } = tx
+    let current_time = get_current_time(tx)
 
-    // Process based on the presence of existing datum
     when datum_opt is {
-      Some(datum) -> {
-        // Convert members list to Dict for easier lookups
-        let members_dict = dict.from_pairs(datum.members)
-        // Verify authorization based on redeemer action
+      Some(datum) ->
+        // Existing entity UTxO - member management operations
         when redeemer is {
           RegistryAction.CreateEntity { .. } ->
-            // Entity already exists, creation should fail
+            // Cannot create entity when UTxO already exists
             False
           RegistryAction.AddMember { member } -> {
-            // 1. Ensure transaction is signed by an admin
-            let is_signed_by_admin =
-              list.any(
-                extra_signatories,
-                fn(key) { list.has(datum.admins, key) },
-              )
-            // 2. Check that member doesn't already exist
+            // Validate member addition with NFT integration
+            let valid_member_data = validate_member_data(member, current_time)
+            let is_signed_by_admin = list.has(tx.extra_signatories, datum.admin)
             let member_exists =
-              dict.has_key(members_dict, member.verification_key_hash)
-            // 3. Validate member data (non-empty name, valid status)
-            let valid_member_data = member.name != "" && member.join_time > 0
-            if !is_signed_by_admin || member_exists || !valid_member_data {
-              False
-            } else {
-              // 4. Check if output datum is correctly updated
-              let outputs_with_inline_datum =
-                list.filter(
-                  outputs,
-                  fn(output) {
-                    when output.datum is {
-                      InlineDatum(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-              when outputs_with_inline_datum is {
-                [output] ->
-                  // Verify the output contains a properly updated datum
-                  when output.datum is {
-                    InlineDatum(data) -> {
-                      expect new_datum: RegistryDatum = data
-                      // Convert both member lists to pairs for comparison
-                      let old_members_pairs = datum.members
-                      let new_members_pairs = new_datum.members
-                      // Verify the entity is updated with correct member count
-                      let entity_updated =
-                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count + 1
-                      // Verify all existing members are preserved
-                      let contains_all_existing_members =
-                        list.all(
-                          old_members_pairs,
-                          fn(pair) { list.has(new_members_pairs, pair) },
-                        )
-                      // Verify the new member is added
-                      let contains_new_member =
-                        list.any(
-                          new_members_pairs,
-                          fn(pair) {
-                            let Pair(key, value) = pair
-                            key == member.verification_key_hash && value.name == member.name && value.join_time == member.join_time && value.status == member.status
-                          },
-                        )
-                      // Verify members list size increased by exactly one
-                      let correct_member_count =
-                        list.length(new_members_pairs) == list.length(
-                          old_members_pairs,
-                        ) + 1
-                      // Verify admins remain unchanged
-                      let admins_unchanged = new_datum.admins == datum.admins
-                      entity_updated && contains_all_existing_members && contains_new_member && correct_member_count && admins_unchanged
-                    }
-                    _ -> False
-                  }
-                _ -> False
-              }
-            }
-          }
-          RegistryAction.UpdateMemberStatus { member_key, new_status } -> {
-            // 1. Ensure transaction is signed by an admin
-            let is_signed_by_admin =
-              list.any(
-                extra_signatories,
-                fn(key) { list.has(datum.admins, key) },
+              member_already_exists(datum.members, member.verification_key_hash)
+            let valid_nft_reference =
+              validate_nft_token_name(
+                member.nft_token_name,
+                member.verification_key_hash,
               )
-            // 2. Verify member exists
-            let member_exists = dict.has_key(members_dict, member_key)
-            // Get the current member if it exists
-            let current_member = dict.get(members_dict, member_key)
-            if !is_signed_by_admin || !member_exists {
+            if !valid_member_data || !is_signed_by_admin || member_exists || !valid_nft_reference {
               False
             } else {
-              // 3. Check if output datum is correctly updated
-              let outputs_with_inline_datum =
-                list.filter(
-                  outputs,
-                  fn(output) {
-                    when output.datum is {
-                      InlineDatum(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-              when outputs_with_inline_datum is {
-                [output] ->
-                  // Verify the output contains a properly updated datum
-                  when output.datum is {
-                    InlineDatum(data) -> {
-                      expect new_datum: RegistryDatum = data
-                      expect Some(member_data) = current_member
-                      // Verify the entity remains unchanged
-                      let entity_unchanged =
-                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
-                      // Convert new members to dict for easier lookup
-                      let new_members_dict = dict.from_pairs(new_datum.members)
-                      // Check that the member has been updated with new status
-                      let member_updated =
-                        when dict.get(new_members_dict, member_key) is {
-                          Some(updated_member) ->
-                            updated_member.name == member_data.name && updated_member.join_time == member_data.join_time && updated_member.status == new_status
-                          None -> False
-                        }
-                      // Verify all other members remain unchanged
-                      let other_members_unchanged =
-                        list.all(
-                          datum.members,
-                          fn(pair) {
-                            let Pair(key, value) = pair
-                            if key == member_key {
-                              // Skip the updated member
-                              True
-                            } else {
-                              // Check other members remain unchanged
-                              when dict.get(new_members_dict, key) is {
-                                Some(new_value) -> new_value == value
-                                None -> False
-                              }
-                            }
-                          },
-                        )
-                      // Verify members count remains the same
-                      let member_count_unchanged =
-                        list.length(new_datum.members) == list.length(
-                          datum.members,
-                        )
-                      // Verify admins remain unchanged
-                      let admins_unchanged = new_datum.admins == datum.admins
-                      entity_unchanged && member_updated && other_members_unchanged && member_count_unchanged && admins_unchanged
-                    }
-                    _ -> False
-                  }
-                _ -> False
-              }
-            }
-          }
-          RegistryAction.AddAdmin { admin_key } -> {
-            // 1. Ensure transaction is signed by an existing admin
-            let is_signed_by_admin =
-              list.any(
-                extra_signatories,
-                fn(key) { list.has(datum.admins, key) },
-              )
-            // 2. Check that the new admin doesn't already exist
-            let admin_exists = list.has(datum.admins, admin_key)
-            if !is_signed_by_admin || admin_exists {
-              False
-            } else {
-              // 3. Verify output datum is correctly updated
-              // Find outputs with inline datum
-              let outputs_with_inline_datum =
-                list.filter(
-                  outputs,
-                  fn(output) {
-                    when output.datum is {
-                      InlineDatum(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-              when outputs_with_inline_datum is {
-                [output] ->
-                  // Verify the output contains a properly updated datum
-                  when output.datum is {
-                    InlineDatum(data) -> {
-                      expect new_datum: RegistryDatum = data
-                      // Verify the entity remains unchanged
-                      let entity_unchanged =
-                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
-                      // Verify the admin list contains all existing admins plus the new one
-                      let contains_all_existing_admins =
-                        list.all(
-                          datum.admins,
-                          fn(admin) { list.has(new_datum.admins, admin) },
-                        )
-                      let contains_new_admin =
-                        list.has(new_datum.admins, admin_key)
-                      // Verify the admin list size increased by exactly one
-                      let correct_admin_count =
-                        list.length(new_datum.admins) == list.length(
-                          datum.admins,
-                        ) + 1
-                      // Verify members remain unchanged
-                      let members_unchanged =
-                        dict.to_pairs(dict.from_pairs(new_datum.members)) == dict.to_pairs(
-                          dict.from_pairs(datum.members),
-                        )
-                      entity_unchanged && contains_all_existing_admins && contains_new_admin && correct_admin_count && members_unchanged
-                    }
-                    _ -> False
-                  }
-                _ -> False
-              }
-            }
-          }
-          RegistryAction.RemoveAdmin { admin_key } -> {
-            // 1. Ensure transaction is signed by an existing admin
-            let is_signed_by_admin =
-              list.any(
-                extra_signatories,
-                fn(key) { list.has(datum.admins, key) },
-              )
-            // 2. Check that admin exists
-            let admin_exists = list.has(datum.admins, admin_key)
-            // 3. Ensure we're not removing the last admin
-            let will_have_admins_left = list.length(datum.admins) > 1
-            if !is_signed_by_admin || !admin_exists || !will_have_admins_left {
-              False
-            } else {
-              // 4. Check if output datum is correctly updated
-              let outputs_with_inline_datum =
-                list.filter(
-                  outputs,
-                  fn(output) {
-                    when output.datum is {
-                      InlineDatum(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-              when outputs_with_inline_datum is {
-                [output] ->
-                  // Verify the output contains a properly updated datum
-                  when output.datum is {
-                    InlineDatum(data) -> {
-                      expect new_datum: RegistryDatum = data
-                      // Verify the entity remains unchanged
-                      let entity_unchanged =
-                        new_datum.entity.name == datum.entity.name && new_datum.entity.description == datum.entity.description && new_datum.entity.founder == datum.entity.founder && new_datum.entity.member_count == datum.entity.member_count
-                      // Verify all admins except the removed one are preserved
-                      let contains_all_other_admins =
-                        list.all(
-                          datum.admins,
-                          fn(admin) {
-                            if admin == admin_key {
-                              True
-                            } else {
-                              // Skip the admin being removed
-                              list.has(new_datum.admins, admin)
-                            }
-                          },
-                        )
-                      // Verify the admin to remove is not in the new list
-                      let admin_removed = !list.has(new_datum.admins, admin_key)
-                      // Verify admin list size decreased by exactly one
-                      let correct_admin_count =
-                        list.length(new_datum.admins) == list.length(
-                          datum.admins,
-                        ) - 1
-                      // Verify members remain unchanged
-                      let members_unchanged = new_datum.members == datum.members
-                      entity_unchanged && contains_all_other_admins && admin_removed && correct_admin_count && members_unchanged
-                    }
-                    _ -> False
-                  }
-                _ -> False
-              }
+              verify_add_member_output(tx.outputs, datum, member)
             }
           }
         }
-      }
       None ->
-        // Initial setup case - only CreateEntity is valid when no datum exists
+        // New entity creation - creates new UTxO at this contract
         when redeemer is {
           RegistryAction.CreateEntity { name, description } -> {
-            // 1. Verify the entity name and description are not empty
-            let valid_name = name != ""
-            let valid_description = description != ""
-            // 2. Ensure transaction is signed by at least one key
-            let has_signer = list.length(extra_signatories) > 0
-            if !has_signer || !valid_name || !valid_description {
+            let valid_inputs = validate_entity_inputs(name, description)
+            let has_signer = list.length(tx.extra_signatories) > 0
+            if !valid_inputs || !has_signer {
               False
             } else {
-              // 3. Get the founder (first signer)
-              expect Some(founder) = list.at(extra_signatories, 0)
-              // 4. Check if output datum is correctly initialized
-              // Find outputs that contain an inline datum
-              let outputs_with_inline_datum =
-                list.filter(
-                  outputs,
-                  fn(output) {
-                    when output.datum is {
-                      InlineDatum(_) -> True
-                      _ -> False
-                    }
-                  },
-                )
-              when outputs_with_inline_datum is {
-                [output] ->
-                  // Verify the output contains a properly initialized datum
-                  when output.datum is {
-                    InlineDatum(data) -> {
-                      expect new_datum: RegistryDatum = data
-                      // Verify the entity is properly initialized
-                      let entity_valid =
-                        new_datum.entity.name == name && new_datum.entity.description == description && new_datum.entity.founder == founder && new_datum.entity.member_count == 0
-                      // Verify admins list contains the founder
-                      let admins_valid = list.has(new_datum.admins, founder)
-                      // Verify members list is empty initially
-                      let members_valid = list.length(new_datum.members) == 0
-                      entity_valid && admins_valid && members_valid
-                    }
-                    _ -> False
-                  }
-                _ -> False
-              }
+              expect Some(founder) = list.at(tx.extra_signatories, 0)
+              verify_create_entity_output(
+                tx.outputs,
+                name,
+                description,
+                founder,
+                current_time,
+              )
             }
           }
-          // Any other action is invalid when no datum exists
-          _ -> False
+          RegistryAction.AddMember { .. } ->
+            // Cannot add member when no entity exists
+            False
         }
     }
   }
 
   else(_) {
-    // Any other use of this validator should fail
     False
   }
 }
+// POST-MVP DEVELOPMENT ROADMAP:
+// - Atomic member registration + NFT minting in single transaction
+// - Multi-admin support with role-based permissions  
+// - Member status management (Active/Inactive/Suspended)
+// - NFT-gated governance voting integration
+// - Treasury and governance contract linking
+// - Compliance features and audit trails
+// - Cross-entity member portability
+// - Emergency procedures and recovery mechanisms
