@@ -5,14 +5,13 @@
 use aiken/collection/list
 use aiken/crypto.{VerificationKeyHash}
 use cardano/assets.{from_lovelace}
-use cardano/transaction.{InlineDatum, OutputReference, Transaction}
+use cardano/transaction.{InlineDatum, Transaction}
 use entity_registry/types.{Entity, Member, RegistryDatum}
 use mocktail.{
   complete, mock_script_address, mocktail_tx, required_signer_hash, tx_out,
   tx_out_inline_datum,
 }
 use mocktail/virgin_key_hash.{mock_pub_key_hash}
-use mocktail/virgin_output_reference.{mock_utxo_ref}
 
 /// Create a sample entity for testing
 fn create_sample_entity(

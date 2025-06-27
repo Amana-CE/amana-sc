@@ -11,7 +11,7 @@ use entity_registry/types.{Entity, Member, RegistryAction, RegistryDatum}
 // Helper Functions - defined before validator
 
 /// Extract current time from transaction validity range - simplified for MVP
-fn get_current_time(tx: Transaction) -> Int {
+fn get_current_time(_tx: Transaction) -> Int {
   // For MVP, we use a simple approach
   // In production, you would properly extract from tx.validity_range
   1625097600000
